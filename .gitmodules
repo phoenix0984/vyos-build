@@ -9,7 +9,7 @@
 	url = https://github.com/vyos/vyatta-op.git
 [submodule "packages/vyatta-cfg-system"]
 	path = packages/vyatta-cfg-system
-	url = https://github.com/vyos/vyatta-cfg-system.git
+	url = https://github.com/phoenix0984/vyatta-cfg-system.git
 [submodule "packages/vyatta-cfg-firewall"]
 	path = packages/vyatta-cfg-firewall
 	url = https://github.com/vyos/vyatta-cfg-firewall.git
