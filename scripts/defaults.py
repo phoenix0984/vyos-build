@@ -22,7 +22,7 @@ BUILD_DIR = 'build'
 BUILD_CONFIG = os.path.join(BUILD_DIR, 'build-config.json')
 
 # The default mirror was chosen entirely at random
-DEBIAN_MIRROR = 'http://ftp.nl.debian.org/debian/'
+DEBIAN_MIRROR = 'http://ftp.de.debian.org/debian/'
 DEBIAN_SECURITY_MIRROR = 'http://security.debian.org/'
 
 DEBIAN_DISTRIBUTION = 'jessie'
