@@ -1,0 +1,14 @@
+#!/bin/sh
+
+echo I: Create pam for 2FA.
+
+/bin/cp /etc/pam.d/common-account /etc/pam.d/openvpn
+cat >> /etc/pam.d/openvpn <<EOF
+#Name: Create home directory during login
+#Default: yes
+#Priority: 900
+#Session-Type: Additional
+#Session:
+#        required        pam_mkhomedir.so umask=0022 skel=/etc/skel
+EOF
+sync

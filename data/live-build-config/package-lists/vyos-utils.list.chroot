@@ -13,3 +13,5 @@ nano
 vim-tiny
 screen
 minicom
+libpam-google-authenticator
+libqrencode3

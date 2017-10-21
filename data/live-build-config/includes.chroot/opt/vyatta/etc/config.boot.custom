@@ -1,0 +1,1322 @@
+firewall {
+    all-ping enable
+    broadcast-ping disable
+    config-trap disable
+    group {
+        address-group DNS {
+            address 8.8.8.8
+            address 8.8.4.4
+            address 208.67.222.222
+            address 208.67.220.220
+            address 80.69.100.174
+            address 80.69.100.198
+            description "NS -> Google, openDNS & ISP"
+        }
+        address-group MANAGEMENT-WAN-ACCESS {
+            address 192.168.188.10
+            address 192.168.188.15
+            address 192.168.188.20
+            description "MANAGEMENT -> WAN Access"
+        }
+        address-group SPAMHAUS {
+            description "SPAMHAUS E/DROP List"
+        }
+        network-group MANAGEMENT {
+            description "Remote Management Networks"
+            network 172.16.1.0/24
+            network 172.16.2.0/24
+            network 172.18.28.0/24
+        }
+        network-group RFC1918 {
+            description "RFC1918 Private Networks"
+            network 10.0.0.0/8
+            network 172.16.0.0/12
+            network 192.168.0.0/16
+        }
+        port-group MAIL-X {
+            description "SMTP, IMAP & POP"
+            port 110
+            port 143
+            port 465
+            port 587
+            port 993
+            port 995
+        }
+    }
+    ipv6-receive-redirects disable
+    ipv6-src-route disable
+    ip-src-route disable
+    log-martians enable
+    name DMZ-GUESTWLAN {
+        default-action reject
+        description "DMZ --> GUESTWLAN"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name DMZ-LAN {
+        default-action reject
+        description "DMZ --> LAN"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+        rule 300 {
+            action accept
+            description "Accept:: TFTP"
+            destination {
+                address 172.16.1.254
+                port 69
+            }
+            protocol udp
+            state {
+                new enable
+            }
+        }
+    }
+    name DMZ-LOCAL {
+        default-action reject
+        description "DMZ --> LOCAL"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+        rule 255 {
+            action accept
+            description "Accept:: Broadcasts"
+            destination {
+                address 10.127.254.255
+            }
+            protocol all
+        }
+        rule 600 {
+            action accept
+            description "Accept:: DNS"
+            destination {
+                port 53
+            }
+            protocol tcp_udp
+        }
+        rule 700 {
+            action accept
+            description "Accept:: DHCP/BOOTP"
+            destination {
+                port 67
+            }
+            protocol udp
+        }
+        rule 800 {
+            action accept
+            description "Accept:: NTP"
+            destination {
+                port 123
+            }
+            protocol udp
+        }
+    }
+    name DMZ-MANAGEMENT {
+        default-action reject
+        description "DMZ --> MANAGEMENT"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name DMZ-WAN {
+        default-action reject
+        description "DMZ --> WAN"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+        rule 100 {
+            action accept
+            description "Accept:: ICMP"
+            protocol icmp
+        }
+        rule 200 {
+            action accept
+            description "Accept:: HTTP/S"
+            destination {
+                port 80,8080,443,8443
+            }
+            protocol tcp_udp
+        }
+        rule 300 {
+            action accept
+            description "Accept:: FTP"
+            destination {
+                port 20,21,1024-65535
+            }
+            disable
+            protocol tcp
+        }
+        rule 500 {
+            action accept
+            description "Accept:: SMTP/IMAP"
+            destination {
+                group {
+                    port-group MAIL-X
+                }
+            }
+            protocol tcp
+        }
+        rule 800 {
+            action accept
+            description "Accept:: NTP"
+            destination {
+                port 123
+            }
+            protocol udp
+        }
+    }
+    name GUESTWLAN-DMZ {
+        default-action reject
+        description "GUESTWLAN --> DMZ"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name GUESTWLAN-LAN {
+        default-action reject
+        description "GUESTWLAN --> LAN"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+        rule 999 {
+            action accept
+            description "Accept:: Brother Scan2PC"
+            destination {
+                address 172.16.1.0/24
+                port 54925,54926
+            }
+            protocol udp
+            source {
+                address 10.127.191.98
+            }
+        }
+    }
+    name GUESTWLAN-LOCAL {
+        default-action reject
+        description "GUESTWLAN --> LOCAL"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+        rule 255 {
+            action accept
+            description "Accept:: Broadcasts"
+            destination {
+                address 10.127.191.255
+            }
+            protocol tcp_udp
+        }
+        rule 600 {
+            action accept
+            description "Accept:: DNS"
+            destination {
+                port 53
+            }
+            log disable
+            protocol tcp_udp
+        }
+        rule 700 {
+            action accept
+            description "Accept:: DHCP/BOOTP"
+            destination {
+                port 67
+            }
+            protocol udp
+        }
+        rule 800 {
+            action accept
+            description "Accept:: NTP"
+            destination {
+                port 123
+            }
+            protocol udp
+        }
+    }
+    name GUESTWLAN-MANAGEMENT {
+        default-action reject
+        description "GUESTWLAN --> MANAGEMENT"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name GUESTWLAN-WAN {
+        default-action reject
+        description "GUESTWLAN --> WAN"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+        rule 100 {
+            action accept
+            description "Accept:: ICMP"
+            protocol icmp
+        }
+        rule 200 {
+            action accept
+            description "Accept:: HTTP/S"
+            destination {
+                port 80,8080,443,8443
+            }
+            protocol tcp_udp
+        }
+        rule 300 {
+            action accept
+            description "Accept:: FTP"
+            destination {
+                port 20,21,1024-65535
+            }
+            protocol tcp
+        }
+        rule 500 {
+            action accept
+            description "Accept:: SMTP/IMAP"
+            destination {
+                group {
+                    port-group MAIL-X
+                }
+            }
+            protocol tcp
+        }
+        rule 800 {
+            action accept
+            description "Accept:: NTP"
+            destination {
+                port 123
+            }
+            protocol udp
+        }
+    }
+    name LAN-DMZ {
+        default-action accept
+        description "LAN --> DMZ"
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name LAN-GUESTWLAN {
+        default-action accept
+        description "LAN --> GUESTWLAN"
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name LAN-LOCAL {
+        default-action reject
+        description "LAN --> LOCAL"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+        rule 66 {
+            action accept
+            description "Accept:: Management Access"
+            log enable
+            source {
+                group {
+                    network-group MANAGEMENT
+                }
+            }
+            state {
+                new enable
+            }
+        }
+    }
+    name LAN-MANAGEMENT {
+        default-action reject
+        description "LAN --> MANAGEMENT"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+        rule 66 {
+            action accept
+            description "Accept:: Management Access"
+            log enable
+            source {
+                group {
+                    network-group MANAGEMENT
+                }
+            }
+            state {
+                new enable
+            }
+        }
+    }
+    name LAN-WAN {
+        default-action accept
+        description "LAN --> WAN"
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name LOCAL-DMZ {
+        default-action accept
+        description "LOCAL --> DMZ"
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name LOCAL-GUESTWLAN {
+        default-action accept
+        description "LOCAL --> GUESTWLAN"
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name LOCAL-LAN {
+        default-action accept
+        description "LOCAL --> LAN"
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name LOCAL-MANAGEMENT {
+        default-action accept
+        description "LOCAL --> MANAGEMENT"
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name LOCAL-WAN {
+        default-action reject
+        description "LOCAL --> WAN"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+        rule 100 {
+            action accept
+            description "Accept:: ICMP"
+            log enable
+            protocol icmp
+        }
+        rule 200 {
+            action accept
+            description "Accept:: HTTP/S"
+            destination {
+                port 80,8080,443,8443
+            }
+            log enable
+            protocol tcp_udp
+        }
+        rule 400 {
+            action accept
+            description "Accept:: DNS"
+            destination {
+                group {
+                    address-group DNS
+                }
+                port 53
+            }
+            protocol tcp_udp
+        }
+        rule 800 {
+            action accept
+            description "Accept:: NTP"
+            destination {
+                port 123
+            }
+            log enable
+            protocol udp
+        }
+        rule 900 {
+            action accept
+            description "Accept:: SSH"
+            destination {
+                port 22,8022
+            }
+            log enable
+            protocol tcp
+        }
+    }
+    name MANAGEMENT-DMZ {
+        default-action accept
+        description "MANAGEMENT --> DMZ"
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name MANAGEMENT-GUESTWLAN {
+        default-action accept
+        description "MANAGEMENT --> GUESTWLAN"
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name MANAGEMENT-LAN {
+        default-action accept
+        description "MANAGEMENT --> LAN"
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name MANAGEMENT-LOCAL {
+        default-action accept
+        description "MANAGEMENT --> LOCAL"
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name MANAGEMENT-WAN {
+        default-action reject
+        description "MANAGEMENT --> WAN"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+        rule 100 {
+            action accept
+            description "Accept:: ICMP"
+            protocol icmp
+        }
+        rule 200 {
+            action accept
+            description "Accept:: HTTP/S"
+            destination {
+                port 80,8080,443,8443
+            }
+            protocol tcp_udp
+            source {
+                group {
+                    address-group MANAGEMENT-WAN-ACCESS
+                }
+            }
+        }
+        rule 810 {
+            action accept
+            description "Accept:: Bareos"
+            destination {
+                port 9101-9103
+            }
+            protocol tcp
+            source {
+                group {
+                    address-group MANAGEMENT-WAN-ACCESS
+                }
+            }
+        }
+        rule 820 {
+            action accept
+            description "Accept:: SNMP Access"
+            destination {
+                port 161
+            }
+            protocol udp
+            source {
+                group {
+                    address-group MANAGEMENT-WAN-ACCESS
+                }
+            }
+        }
+        rule 900 {
+            action accept
+            description "Accept:: SSH"
+            destination {
+                port 22,8022
+            }
+            protocol tcp
+            source {
+                group {
+                    address-group MANAGEMENT-WAN-ACCESS
+                }
+            }
+        }
+    }
+    name WAN-DMZ {
+        default-action drop
+        description "WAN --> DMZ"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name WAN-GUESTWLAN {
+        default-action drop
+        description "WAN --> GUESTWLAN"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name WAN-LAN {
+        default-action drop
+        description "WAN --> LAN"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    name WAN-LOCAL {
+        default-action drop
+        description "WAN --> LOCAL"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+        rule 10 {
+            action drop
+            description "Drop:: SPAMHAUS"
+            log enable
+            source {
+                group {
+                    address-group SPAMHAUS
+                }
+            }
+        }
+        rule 20 {
+            action drop
+            description "Drop:: RFC1918"
+            log enable
+            source {
+                group {
+                    network-group RFC1918
+                }
+            }
+        }
+        rule 40 {
+            action accept
+            description "Accept:: openVPN SSL"
+            destination {
+                port 443
+            }
+            log enable
+            protocol tcp
+            state {
+                new enable
+            }
+        }
+        rule 100 {
+            action accept
+            description "Accept:: ICMP"
+            disable
+            limit {
+                burst 5
+                rate 2/second
+            }
+            log enable
+            protocol icmp
+        }
+    }
+    name WAN-MANAGEMENT {
+        default-action drop
+        description "WAN --> MANAGEMENT"
+        enable-default-log
+        rule 1 {
+            action accept
+            description "Accept:: Established & Related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 2 {
+            action drop
+            description "Drop:: Invalid state"
+            log enable
+            state {
+                invalid enable
+            }
+        }
+    }
+    receive-redirects disable
+    send-redirects enable
+    source-validation disable
+    syn-cookies enable
+    twa-hazards-protection enable
+}
+interfaces {
+    loopback lo {
+    }
+}
+protocols {
+    static {
+        route 10.0.0.0/8 {
+            blackhole {
+                distance 254
+            }
+        }
+        route 172.16.0.0/12 {
+            blackhole {
+                distance 254
+            }
+        }
+        route 192.168.0.0/16 {
+            blackhole {
+                distance 254
+            }
+        }
+    }
+}
+service {
+    dns {
+        forwarding {
+            cache-size 2048
+            ignore-hosts-file
+            listen-on lo
+            name-server 8.8.8.8
+            name-server 8.8.4.4
+        }
+    }
+    snmp {
+        community 0bserv1um! {
+            authorization ro
+        }
+        contact "NetAdmin <netadm@ad.affito.de>"
+        location "Witten, Nordrhein-Westfalen Germany"
+    }
+    ssh {
+        port 22
+    }
+}
+system {
+    config-management {
+        commit-revisions 20
+    }
+    conntrack {
+        expect-table-size 4096
+        hash-size 32768
+        modules {
+            gre {
+                disable
+            }
+            h323 {
+                disable
+            }
+            pptp {
+                disable
+            }
+            sip {
+                disable
+                enable-indirect-media
+                enable-indirect-signalling
+            }
+            sqlnet {
+                disable
+            }
+        }
+        table-size 524288
+        tcp {
+            half-open-connections 512
+            loose enable
+            max-retrans 3
+        }
+    }
+    console {
+        device ttyS0 {
+            speed 115200
+        }
+    }
+    domain-name ad.affito.de
+    host-name vyos
+    ip {
+        arp {
+            table-size 32768
+        }
+    }
+    login {
+        user vyos {
+            authentication {
+                encrypted-password $6$isTt9/eb$CjsTh79IoNHQJfpB6ENCQaTgaJ3Swn6Ct.YB4H8os6u3J6KUoSVq/iI5qirlrLe4RUZAqMzLX.ufOkbFNPZqk.
+                plaintext-password ""
+                public-keys [mg@ad.affito.de] {
+                    key AAAAC3NzaC1lZDI1NTE5AAAAIJ1cPG3nA1fZRKev+g6u/tOWM7AZZ+QNi/CzZXusfIkx
+                    type ssh-ed25519
+                }
+            }
+            level admin
+        }
+    }
+    name-server 127.0.0.1
+    ntp {
+        server 0.de.pool.ntp.org {
+            prefer
+        }
+        server 1.de.pool.ntp.org {
+        }
+        server 2.de.pool.ntp.org {
+        }
+        server 3.de.pool.ntp.org {
+        }
+    }
+    options {
+        ctrl-alt-del-action ignore
+        reboot-on-panic true
+    }
+    package {
+        auto-sync 1
+        repository main {
+            components "main contrib non-free"
+            distribution jessie
+            password ""
+            url http://httpredir.debian.org/debian
+            username ""
+        }
+    }
+    syslog {
+        global {
+            facility all {
+                level notice
+            }
+            facility protocols {
+                level debug
+            }
+        }
+    }
+    time-zone Europe/Berlin
+}
+zone-policy {
+    zone DMZ {
+        default-action drop
+        from GUESTWLAN {
+            firewall {
+                name GUESTWLAN-DMZ
+            }
+        }
+        from LAN {
+            firewall {
+                name LAN-DMZ
+            }
+        }
+        from LOCAL {
+            firewall {
+                name LOCAL-DMZ
+            }
+        }
+        from MANAGEMENT {
+            firewall {
+                name MANAGEMENT-DMZ
+            }
+        }
+        from WAN {
+            firewall {
+                name WAN-DMZ
+            }
+        }
+    }
+    zone GUESTWLAN {
+        default-action drop
+        from DMZ {
+            firewall {
+                name DMZ-GUESTWLAN
+            }
+        }
+        from LAN {
+            firewall {
+                name LAN-GUESTWLAN
+            }
+        }
+        from LOCAL {
+            firewall {
+                name LOCAL-GUESTWLAN
+            }
+        }
+        from MANAGEMENT {
+            firewall {
+                name MANAGEMENT-GUESTWLAN
+            }
+        }
+        from WAN {
+            firewall {
+                name WAN-GUESTWLAN
+            }
+        }
+    }
+    zone LAN {
+        default-action drop
+        from DMZ {
+            firewall {
+                name DMZ-LAN
+            }
+        }
+        from GUESTWLAN {
+            firewall {
+                name GUESTWLAN-LAN
+            }
+        }
+        from LOCAL {
+            firewall {
+                name LOCAL-LAN
+            }
+        }
+        from MANAGEMENT {
+            firewall {
+                name MANAGEMENT-LAN
+            }
+        }
+        from WAN {
+            firewall {
+                name WAN-LAN
+            }
+        }
+    }
+    zone LOCAL {
+        default-action drop
+        from DMZ {
+            firewall {
+                name DMZ-LOCAL
+            }
+        }
+        from GUESTWLAN {
+            firewall {
+                name GUESTWLAN-LOCAL
+            }
+        }
+        from LAN {
+            firewall {
+                name LAN-LOCAL
+            }
+        }
+        from MANAGEMENT {
+            firewall {
+                name MANAGEMENT-LOCAL
+            }
+        }
+        from WAN {
+            firewall {
+                name WAN-LOCAL
+            }
+        }
+    }
+    zone MANAGEMENT {
+        default-action drop
+        from DMZ {
+            firewall {
+                name DMZ-MANAGEMENT
+            }
+        }
+        from GUESTWLAN {
+            firewall {
+                name GUESTWLAN-MANAGEMENT
+            }
+        }
+        from LAN {
+            firewall {
+                name LAN-MANAGEMENT
+            }
+        }
+        from LOCAL {
+            firewall {
+                name LOCAL-MANAGEMENT
+            }
+        }
+        from WAN {
+            firewall {
+                name WAN-MANAGEMENT
+            }
+        }
+    }
+    zone WAN {
+        default-action drop
+        from DMZ {
+            firewall {
+                name DMZ-WAN
+            }
+        }
+        from GUESTWLAN {
+            firewall {
+                name GUESTWLAN-WAN
+            }
+        }
+        from LAN {
+            firewall {
+                name LAN-WAN
+            }
+        }
+        from LOCAL {
+            firewall {
+                name LOCAL-WAN
+            }
+        }
+        from MANAGEMENT {
+            firewall {
+                name MANAGEMENT-WAN
+            }
+        }
+    }
+}
