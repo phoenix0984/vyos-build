@@ -1011,7 +1011,109 @@ firewall {
     twa-hazards-protection enable
 }
 interfaces {
+    bonding bond0 {
+        description "IEEE 802.3ad LACP"
+        hash-policy layer2
+        mode 802.3ad
+        vif 16 {
+            address 172.16.1.1/24
+            description CORPORATE-LAN
+        }
+        vif 162 {
+            address 172.16.2.1/24
+            description CORPORATE-WLAN
+        }
+        vif 188 {
+            address 192.168.188.1/24
+            description MANAGEMENT
+        }
+        vif 191 {
+            address 10.127.191.1/24
+            description GUEST-WLAN
+        }
+        vif 254 {
+            address 10.127.254.1/24
+            description DMZ
+        }
+    }
+    ethernet eth0 {
+        address 78.94.150.90/30
+        description WAN
+        duplex auto
+        smp-affinity auto
+        speed auto
+    }
+    ethernet eth1 {
+        bond-group bond0
+        description "LACP partner"
+        duplex auto
+        smp-affinity auto
+        speed auto
+    }
+    ethernet eth2 {
+        bond-group bond0
+        description "LACP partner"
+        duplex auto
+        smp-affinity auto
+        speed auto
+    }
     loopback lo {
+    }
+    openvpn vtun0 {
+        description "openVPN SSL Gateway"
+        disable
+        encryption aes256
+        hash sha256
+        keep-alive {
+            failure-count 10
+            interval 120
+        }
+        local-port 443
+        mode server
+        openvpn-option --tls-server
+        openvpn-option "--log /var/log/openvpn-ssl.log"
+        openvpn-option --persist-key
+        openvpn-option --persist-tun
+        openvpn-option "--user nobody"
+        openvpn-option "--group nogroup"
+        openvpn-option "--remote-cert-tls client"
+        openvpn-option --float
+        openvpn-option "--verb 3"
+        openvpn-option "--tls-version-min 1.2"
+        openvpn-option "--tls-cipher TLS-DHE-RSA-WITH-AES-256-GCM-SHA384:TLS-DHE-RSA-WITH-AES-256-CBC-SHA256:TLS-DHE-RSA-WITH-AES-128-GCM-SHA256:TLS-DHE-RSA-WITH-AES-128-CBC-SHA256"
+        openvpn-option "--tls-auth /config/auth/openVPN/ta.key 0"
+        protocol tcp-passive
+        replace-default-route {
+            local
+        }
+        server {
+            domain-name ad.affito.de
+            name-server 172.16.1.254
+            push-route 172.16.1.0/24
+            push-route 192.168.188.0/24
+            push-route 10.127.254.0/24
+            subnet 172.18.28.0/24
+            topology subnet
+        }
+        tls {
+            ca-cert-file /config/auth/openVPN/AffitoCyberSecRootCA.crt
+            cert-file /config/auth/openVPN/openVPN.crt
+            crl-file /config/auth/openVPN/AffitoCyberSecRootCA_rev.pem
+            dh-file /config/auth/openVPN/dh2048.pem
+            key-file /config/auth/openVPN/openVPN.key
+        }
+        use-lzo-compression
+    }
+}
+nat {
+    source {
+        rule 5000 {
+            outbound-interface eth0
+            protocol all
+            translation {
+                address masquerade
+            }
+        }
     }
 }
 protocols {
@@ -1034,23 +1136,112 @@ protocols {
     }
 }
 service {
+    dhcp-server {
+        disabled false
+        hostfile-update disable
+        shared-network-name CORPORATE-WLAN {
+            authoritative enable
+            subnet 172.16.2.0/24 {
+                default-router 172.16.2.1
+                dns-server 172.16.1.254
+                domain-name ad.affito.de
+                lease 86400
+                ntp-server 172.16.2.1
+                start 172.16.2.100 {
+                    stop 172.16.2.199
+                }
+            }
+        }
+        shared-network-name DMZ {
+            authoritative enable
+            subnet 10.127.254.0/24 {
+                default-router 10.127.254.1
+                dns-server 10.127.254.1
+                lease 86400
+                ntp-server 10.127.254.1
+                start 10.127.254.100 {
+                    stop 10.127.254.199
+                }
+                static-mapping VUSOLOSE {
+                    ip-address 10.127.254.98
+                    mac-address 00:1d:ec:0b:b0:75
+                }
+            }
+        }
+        shared-network-name GUEST-WLAN {
+            authoritative enable
+            subnet 10.127.191.0/24 {
+                default-router 10.127.191.1
+                dns-server 10.127.191.1
+                lease 86400
+                ntp-server 10.127.191.1
+                start 10.127.191.100 {
+                    stop 10.127.191.199
+                }
+                static-mapping BRW3859F9C2A591 {
+                    ip-address 10.127.191.98
+                    mac-address 38:59:f9:c2:a5:91
+                }
+            }
+        }
+        shared-network-name MANAGEMENT {
+            authoritative enable
+            subnet 192.168.188.0/24 {
+                default-router 192.168.188.1
+                dns-server 192.168.188.1
+                lease 86400
+                ntp-server 192.168.188.1
+                start 192.168.188.100 {
+                    stop 192.168.188.199
+                }
+                static-mapping uap-lite {
+                    ip-address 192.168.188.10
+                    mac-address 80:2a:a8:56:dc:65
+                }
+            }
+        }
+    }
     dns {
         forwarding {
             cache-size 2048
+            domain affito.de {
+                server 172.16.1.254
+            }
             ignore-hosts-file
+            listen-on bond0.16
+            listen-on bond0.162
+            listen-on bond0.191
+            listen-on bond0.188
+            listen-on bond0.254
             listen-on lo
-            name-server 8.8.8.8
-            name-server 8.8.4.4
+            listen-on vtun0
+            name-server 80.69.100.174
+            name-server 80.69.100.198
+        }
+    }
+    lldp {
+        interface eth0 {
+            disable
+        }
+        management-address 192.168.188.1
+        snmp {
+            enable
         }
     }
     snmp {
         community 0bserv1um! {
             authorization ro
+            client 192.168.188.20
         }
         contact "NetAdmin <netadm@ad.affito.de>"
+        listen-address 192.168.188.1 {
+            port 161
+        }
         location "Witten, Nordrhein-Westfalen Germany"
     }
     ssh {
+        disable-password-authentication
+        listen-address 192.168.188.1
         port 22
     }
 }
@@ -1092,7 +1283,9 @@ system {
             speed 115200
         }
     }
+    disable-dhcp-nameservers
     domain-name ad.affito.de
+    gateway-address 78.94.150.89
     host-name vyos
     ip {
         arp {
@@ -1100,7 +1293,7 @@ system {
         }
     }
     login {
-        user vyos {
+        user admin {
             authentication {
                 encrypted-password $6$isTt9/eb$CjsTh79IoNHQJfpB6ENCQaTgaJ3Swn6Ct.YB4H8os6u3J6KUoSVq/iI5qirlrLe4RUZAqMzLX.ufOkbFNPZqk.
                 plaintext-password ""
@@ -1111,9 +1304,34 @@ system {
             }
             level admin
         }
+        user oxidized {
+            authentication {
+                encrypted-password $6$cnKmYJ2.Rf88yi$q0g27Ej.hA9L1h5VgUwuQH8shzCNKhK82/2piynI2DlUlWeIfz6AHicmq4Gb6KmfReR8KcJjTFhdLtve0bB2Q1
+                plaintext-password ""
+                public-keys oxidized@EdgeOS {
+                    key AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHbG0iFiEGXkDYyJ3/agTTCxV2rOg/GnhiMRhTNfZBsCRHXcNbMEl5b6HeqRmacHyswdsDWeUMc+Q4/yyW7j4Zg=
+                    type ecdsa-sha2-nistp256
+                }
+            }
+            level admin
+        }
+        user vyos {
+            authentication {
+                encrypted-password $6$QxPS.uk6mfo$9QBSo8u1FkH16gMyAVhus6fU3LOzvLR9Z9.82m3tiHFAxTtIkhaZSWssSgzt4v4dGAL8rhVQxTg0oAG9/q11h/
+                plaintext-password ""
+            }
+            level admin
+        }
     }
     name-server 127.0.0.1
     ntp {
+        client {
+            address 172.16.1.0/24
+            address 172.16.2.0/24
+            address 10.127.254.0/24
+            address 10.127.191.0/24
+            address 192.168.188.0/24
+        }
         server 0.de.pool.ntp.org {
             prefer
         }
@@ -1125,7 +1343,6 @@ system {
         }
     }
     options {
-        ctrl-alt-del-action ignore
         reboot-on-panic true
     }
     package {
@@ -1178,6 +1395,7 @@ zone-policy {
                 name WAN-DMZ
             }
         }
+        interface bond0.254
     }
     zone GUESTWLAN {
         default-action drop
@@ -1206,6 +1424,7 @@ zone-policy {
                 name WAN-GUESTWLAN
             }
         }
+        interface bond0.191
     }
     zone LAN {
         default-action drop
@@ -1234,6 +1453,9 @@ zone-policy {
                 name WAN-LAN
             }
         }
+        interface bond0.16
+        interface bond0.162
+        interface vtun0
     }
     zone LOCAL {
         default-action drop
@@ -1262,6 +1484,7 @@ zone-policy {
                 name WAN-LOCAL
             }
         }
+        local-zone
     }
     zone MANAGEMENT {
         default-action drop
@@ -1290,6 +1513,7 @@ zone-policy {
                 name WAN-MANAGEMENT
             }
         }
+        interface bond0.188
     }
     zone WAN {
         default-action drop
@@ -1318,5 +1542,11 @@ zone-policy {
                 name MANAGEMENT-WAN
             }
         }
+        interface eth0
     }
 }
+
+
+/* Warning: Do not remove the following line. */
+/* === vyatta-config-version: "cluster@1:config-management@1:conntrack-sync@1:conntrack@1:dhcp-relay@1:dhcp-server@4:firewall@5:ipsec@4:nat@4:qos@1:quagga@2:system@7:vrrp@1:wanloadbalance@3:webgui@1:webproxy@1:zone-policy@1" === */
+/* Release version: 999.201710152137 */
